@@ -1,8 +1,4 @@
 #!/usr/bin/env node
-// Entry point for the Todorant MCP server.
-// Uses stdio transport — the standard for local MCP clients like Claude Desktop.
-// Config is loaded eagerly so a missing token fails before we bind the transport.
-
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { loadConfig } from "./config.js";
@@ -30,8 +26,7 @@ async function main(): Promise<void> {
   const transport = new StdioServerTransport();
   await server.connect(transport);
 
-  // Stay alive — transport handles the message loop. Log to stderr so we don't
-  // corrupt the JSON-RPC stream on stdout.
+  // Log to stderr — stdout is reserved for the JSON-RPC stream.
   process.stderr.write("todorant-mcp running on stdio\n");
 }
 
