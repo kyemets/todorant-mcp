@@ -1,8 +1,3 @@
-// Typed HTTP client for the Todorant backend.
-// All methods inject the JWT into the `token` header (Todorant's custom auth scheme —
-// not the standard `Authorization: Bearer`). Errors are normalised into a single
-// TodorantApiError that tools can render back to the LLM with actionable context.
-
 import type { Config } from "./config.js";
 
 export interface Todo {
@@ -66,6 +61,7 @@ export interface ListTodosOptions {
   queryString?: string; // fuzzy search
   skip?: number;
   limit?: number;
+  today?: string; // "YYYY-MM-DD" — required by backend (default: today's UTC date)
 }
 
 export class TodorantApiError extends Error {
@@ -82,8 +78,6 @@ export class TodorantApiError extends Error {
 export class TodorantClient {
   constructor(private readonly config: Config) {}
 
-  // Core request helper — every public method goes through this so auth,
-  // content-type, and error handling stay consistent.
   private async request<T>(
     path: string,
     init: RequestInit & { query?: Record<string, string | number | boolean | undefined> } = {}
@@ -96,6 +90,7 @@ export class TodorantClient {
     }
 
     const headers = new Headers(init.headers);
+    // Todorant uses a custom `token` header, not `Authorization: Bearer`.
     headers.set("token", this.config.token);
     if (init.body && !headers.has("content-type")) {
       headers.set("content-type", "application/json");
@@ -119,7 +114,6 @@ export class TodorantClient {
     return JSON.parse(text) as T;
   }
 
-  // Validate the configured token and return the associated user.
   async whoami(): Promise<unknown> {
     return this.request("/login/token", {
       method: "POST",
@@ -127,8 +121,6 @@ export class TodorantClient {
     });
   }
 
-  // Fetch "the one task to focus on now" for a given day.
-  // Backend requires date in "YYYY-MM-DD" format.
   async getCurrentTask(date: string): Promise<CurrentTaskResponse> {
     return this.request<CurrentTaskResponse>("/todo/current", {
       method: "GET",
@@ -136,12 +128,15 @@ export class TodorantClient {
     });
   }
 
-  // List todos with optional filtering and pagination.
-  // `completed: false` returns open todos, `true` returns completed ones.
+  // GET /todo/ unconditionally requires `date` in YYYY-MM-DD format and throws
+  // 403 invalidFormat otherwise. Default to today's UTC date so callers don't
+  // need to know about this backend quirk.
   async listTodos(options: ListTodosOptions = {}): Promise<ListTodosResponse> {
+    const today = options.today ?? new Date().toISOString().slice(0, 10);
     return this.request<ListTodosResponse>("/todo/", {
       method: "GET",
       query: {
+        date: today,
         completed: options.completed ?? false,
         hash: options.hash,
         queryString: options.queryString,
@@ -151,7 +146,6 @@ export class TodorantClient {
     });
   }
 
-  // Create one or many todos. Returns empty 200 on success.
   async createTodos(todos: CreateTodoInput[]): Promise<void> {
     await this.request("/todo/", {
       method: "POST",
@@ -159,9 +153,8 @@ export class TodorantClient {
     });
   }
 
-  // Edit an existing todo. Only pass the fields you want to change — but note
-  // the backend treats undefined/null fields as "clear", so we only forward
-  // explicitly provided keys.
+  // Backend treats null fields as "clear" — omit properties you don't want to
+  // change rather than passing null, or the field gets wiped.
   async updateTodo(id: string, patch: UpdateTodoInput): Promise<{ incompleteFrogsExist?: boolean }> {
     return this.request(`/todo/${encodeURIComponent(id)}`, {
       method: "PUT",

@@ -1,7 +1,3 @@
-// Load and validate environment configuration at startup.
-// Fail fast with a clear message if the required token is missing —
-// every API call needs it, so there's no point starting without it.
-
 export interface Config {
   baseUrl: string;
   token: string;

@@ -1,31 +1,13 @@
-// MCP tool registrations for Todorant.
-//
-// Each tool maps one backend endpoint to an LLM-callable tool. Input schemas
-// are expressed as Zod shapes so the SDK can generate JSON Schema for clients,
-// and handlers translate API responses into compact text + structuredContent
-// so both text-only and structured-aware clients get what they need.
-//
-// Naming: every tool is prefixed `todorant_` so it's easy to filter in tool
-// pickers and to avoid collisions with other MCP servers.
-
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { TodorantClient, TodorantApiError } from "./client.js";
 
-// "YYYY-MM-DD" — full date used for the "today" context.
 const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-// "YYYY-MM" — monthAndYear bucket that Todorant uses internally.
 const monthYearRegex = /^\d{4}-\d{2}$/;
-// "DD" — day-of-month string.
 const dayRegex = /^\d{2}$/;
-// "HH:MM" — 24h time string.
 const timeRegex = /^\d{2}:\d{2}$/;
-// Mongo ObjectId — 24 hex chars. Validates todo IDs without reaching the network.
 const objectIdRegex = /^[a-f0-9]{24}$/i;
 
-// Render errors in a way the calling LLM can act on — include the HTTP status
-// and the server-provided body so it can decide whether to retry, re-auth,
-// or ask the user for corrected input.
 function toolError(error: unknown): { content: Array<{ type: "text"; text: string }>; isError: true } {
   if (error instanceof TodorantApiError) {
     return {
@@ -45,8 +27,6 @@ function toolError(error: unknown): { content: Array<{ type: "text"; text: strin
   };
 }
 
-// Shape helper — tool returns both a human-readable text block and a
-// structured payload for clients that can consume it.
 function ok(text: string, structured?: unknown) {
   return {
     content: [{ type: "text" as const, text }],
