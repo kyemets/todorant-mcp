@@ -1,0 +1,52 @@
+{
+  "name": "todorant-mcp",
+  "version": "0.1.0",
+  "description": "MCP server for Todorant — manage your one-task-at-a-time todos from Claude and other MCP clients",
+  "license": "MIT",
+  "author": "Kostiantyn Yemets",
+  "type": "module",
+  "bin": {
+    "todorant-mcp": "dist/index.js"
+  },
+  "main": "dist/index.js",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "tsc --watch",
+    "typecheck": "tsc --noEmit",
+    "inspect": "npx @modelcontextprotocol/inspector node dist/index.js",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "todorant",
+    "claude",
+    "todo",
+    "task-management"
+  ],
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.4",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "typescript": "^5.7.2"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kyemets/todorant-mcp.git"
+  },
+  "bugs": {
+    "url": "https://github.com/kyemets/todorant-mcp/issues"
+  },
+  "homepage": "https://github.com/kyemets/todorant-mcp#readme"
+}
