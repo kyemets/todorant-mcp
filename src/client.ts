@@ -66,6 +66,7 @@ export interface ListTodosOptions {
   queryString?: string; // fuzzy search
   skip?: number;
   limit?: number;
+  today?: string; // "YYYY-MM-DD" — required by backend (default: today's UTC date)
 }
 
 export class TodorantApiError extends Error {
@@ -138,10 +139,17 @@ export class TodorantClient {
 
   // List todos with optional filtering and pagination.
   // `completed: false` returns open todos, `true` returns completed ones.
+  //
+  // Why `date` is injected: GET /todo/ builds its response via getStateBody(ctx),
+  // which unconditionally requires `date` in YYYY-MM-DD format and throws
+  // 403 invalidFormat otherwise. We default to today's UTC date so the caller
+  // doesn't need to know about this backend quirk.
   async listTodos(options: ListTodosOptions = {}): Promise<ListTodosResponse> {
+    const today = options.today ?? new Date().toISOString().slice(0, 10);
     return this.request<ListTodosResponse>("/todo/", {
       method: "GET",
       query: {
+        date: today,
         completed: options.completed ?? false,
         hash: options.hash,
         queryString: options.queryString,
